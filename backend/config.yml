@@ -1,0 +1,7 @@
+server:
+  port: 3000
+
+auth:
+  username: admin
+  password: adminpassword
+  session_secret: picobio-super-secret-key
