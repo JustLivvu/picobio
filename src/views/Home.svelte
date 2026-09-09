@@ -6,25 +6,62 @@
     import FollowingTab from "./tabs/FollowingTab.svelte";
     import FollowersTab from "./tabs/FollowersTab.svelte";
 
+    interface Profile {
+        displayName: string;
+        pronouns: string;
+        description: string;
+        joinedDate: string;
+        githubUrl: string;
+        avatarUrl: string;
+    }
+
+    interface Post {
+        id: string;
+        title: string;
+        content: string;
+        createdAt: string;
+    }
+
     type TabType = 'posts' | 'activity' | 'following' | 'followers';
 
     let activeTab = $state<TabType>('posts');
     let avatarUrl = $state('');
+    let profile = $state<Profile>({
+        displayName: '',
+        pronouns: '',
+        description: '',
+        joinedDate: '',
+        githubUrl: '',
+        avatarUrl: ''
+    });
+    let posts = $state<Post[]>([]);
 
-    async function getAvatar() {
-        const response = await api('/media/avatar.jpg');
+    async function loadData() {
+        try {
+            const [profileRes, postsRes] = await Promise.all([
+                api('/api/profile'),
+                api('/api/posts')
+            ]);
 
-        if (!response.ok) {
-            throw new Error('No avatar for ya');
-        }
+            if (profileRes.ok) {
+                const p: Profile = await profileRes.json();
+                profile = p;
+                if (p.avatarUrl) {
+                    const mediaRes = await api(p.avatarUrl.split('?')[0]);
+                    if (mediaRes.ok) {
+                        const blob = await mediaRes.blob();
+                        avatarUrl = URL.createObjectURL(blob);
+                    }
+                }
+            }
 
-        const blob = await response.blob();
-        return URL.createObjectURL(blob);
+            if (postsRes.ok) {
+                posts = await postsRes.json();
+            }
+        } catch {}
     }
 
-    getAvatar().then((url) => {
-        avatarUrl = url;
-    });
+    loadData();
 </script>
 
 <div class="home_main">
@@ -34,8 +71,8 @@
         </div>
 
         <div class="basic_info">
-            <span class="username">Livvya</span>
-            <span class="pronouns">livvya · she/her</span>
+            <span class="username">{profile.displayName}</span>
+            <span class="pronouns">{profile.pronouns}</span>
         </div>
 
         <div class="follow_stats">
@@ -48,26 +85,30 @@
 
         <div class="separator"></div>
 
+        {#if profile.githubUrl}
         <div class="links">
             <div class="link">
                 <Icon icon="mdi:link-variant" />
                 <a
-                    href="https://github.com/justlivvu"
+                    href={profile.githubUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    github.com/justlivvu
+                    {profile.githubUrl.replace('https://', '')}
                 </a>
             </div>
         </div>
+        {/if}
         <div class="separator"></div>
+        {#if profile.description}
         <div class="description">
-            <span>Hey! I'm Livvya, Developer and maintainer of Picobio, Feel free to fork my project or dm me on discord or here. Dont forget to star Picobio on GitHub!</span>
+            <span>{profile.description}</span>
         </div>
         <div class="separator"></div>
+        {/if}
         <div class="profile_creation">
             <Icon icon="material-symbols-light:calendar-today"/>
-            <span>Joined on Jun 14, 2026</span>
+            <span>{profile.joinedDate}</span>
         </div>
     </div>
 
@@ -109,7 +150,7 @@
 
         <div class="tab_content">
             {#if activeTab === 'posts'}
-                <PostsTab />
+                <PostsTab {posts} />
             {:else if activeTab === 'activity'}
                 <ActivityTab />
             {:else if activeTab === 'following'}
