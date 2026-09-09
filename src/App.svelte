@@ -1,16 +1,29 @@
 <script lang="ts">
-    import { createRouter, View } from "@shaun/svelte-router";
     import Home from "./views/Home.svelte";
     import Panel from "./views/Panel.svelte";
+    import NotFound from "./views/404.svelte";
 
-    createRouter({
-        mode: "web",
-        routes: [
-            { path: "/", component: Home },
-            { path: "/panel", component: Panel },
-            { path: "*", component: Home }
-        ]
+    let currentPath = $state(typeof window !== "undefined" ? window.location.pathname : "/");
+
+    $effect(() => {
+        const updatePath = () => {
+            currentPath = window.location.pathname;
+        };
+
+        window.addEventListener("popstate", updatePath);
+        window.addEventListener("hashchange", updatePath);
+
+        return () => {
+            window.removeEventListener("popstate", updatePath);
+            window.removeEventListener("hashchange", updatePath);
+        };
     });
 </script>
 
-<View />
+{#if currentPath === "/" || (typeof window !== "undefined" && window.location.hash === "#/")}
+    <Home />
+{:else if currentPath === "/panel" || (typeof window !== "undefined" && window.location.hash === "#/panel")}
+    <Panel />
+{:else}
+    <NotFound />
+{/if}
