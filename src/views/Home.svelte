@@ -35,6 +35,7 @@
         avatarUrl: ''
     });
     let posts = $state<Post[]>([]);
+    let hostname = $state(typeof window !== 'undefined' ? window.location.hostname : '');
 
     async function loadData() {
         try {
@@ -72,7 +73,7 @@
 
         <div class="basic_info">
             <span class="username">{profile.displayName}</span>
-            <span class="pronouns">{profile.pronouns}</span>
+            <span class="pronouns">{(profile.displayName || 'livvya').toLowerCase()}@{hostname}</span>
         </div>
 
         <div class="follow_stats">
@@ -150,7 +151,7 @@
 
         <div class="tab_content">
             {#if activeTab === 'posts'}
-                <PostsTab {posts} />
+                <PostsTab {posts} {profile} {avatarUrl} />
             {:else if activeTab === 'activity'}
                 <ActivityTab />
             {:else if activeTab === 'following'}
